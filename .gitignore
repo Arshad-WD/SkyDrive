@@ -35,3 +35,8 @@ build/
 # Local Uploads
 uploads/
 
+# Environment Variables / Secrets
+.env
+.env.local
+.env.*
+!.env.template
