@@ -16,6 +16,7 @@ SkyDrive is a cloud file storage platform that allows users to securely upload, 
 - 🕐 **Version History** - Track file versions and restore previous versions
 - 🎨 **Dark Mode Support** - Theme toggle for user preference
 - 🗑️ **Trash Management** - Soft delete with recovery
+- 🦠 **Virus Scanning** - Integrated ClamAV antivirus file scanning on upload
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile
 
 ## Tech Stack
@@ -24,6 +25,7 @@ SkyDrive is a cloud file storage platform that allows users to securely upload, 
 - **Spring Boot 3.x** - Java web framework
 - **PostgreSQL** - Relational database
 - **MinIO** - Object storage (S3-compatible)
+- **ClamAV** - Open-source antivirus engine for file scanning
 - **Spring Security** - Authentication and authorization
 - **JPA/Hibernate** - ORM
 
@@ -44,20 +46,47 @@ SkyDrive is a cloud file storage platform that allows users to securely upload, 
 
 ## Local Setup
 
-### 1. Database Setup
+### 1. Environment Configuration
 
-PostgreSQL should be running on port 5433:
+Copy the environment variable template to create your local configurations:
 
 ```bash
-# If using Docker for PostgreSQL
-docker run -d \
-  --name postgres \
-  -e POSTGRES_PASSWORD=password \
-  -p 5433:5432 \
-  postgres:15
+# In the root directory
+cp .env.template .env
 ```
 
-### 2. Backend Setup
+You can customize the `.env` file with your database, security, and MinIO credentials.
+
+### 2. Database Setup
+
+PostgreSQL should be running on port 5433 (or configured via `DB_URL` in `.env`):
+
+```bash
+# Start a local PostgreSQL container using Docker
+docker run -d \
+  --name skydrive-postgres \
+  -e POSTGRES_DB=skydrive \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -p 5433:5432 \
+  postgres:17
+```
+
+### 3. MinIO Setup (Optional)
+
+Start a local MinIO object storage container:
+
+```bash
+docker run -d \
+  --name skydrive-minio \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  -e MINIO_ROOT_USER=admin \
+  -e MINIO_ROOT_PASSWORD=password123 \
+  minio/minio server /data --console-address ":9001"
+```
+
+### 4. Backend Setup
 
 ```bash
 # From project root
@@ -67,21 +96,9 @@ docker run -d \
 ./mvnw spring-boot:run
 ```
 
-The backend will be available at `http://localhost:8080`
+The backend API will be available at `http://localhost:8080`
 
-### 3. MinIO Setup (Optional)
-
-```bash
-docker run -d \
-  --name minio \
-  -p 9000:9000 \
-  -p 9001:9001 \
-  -e MINIO_ROOT_USER=minioadmin \
-  -e MINIO_ROOT_PASSWORD=minioadmin \
-  minio/minio server /data --console-address ":9001"
-```
-
-### 4. Frontend Setup
+### 5. Frontend Setup
 
 ```bash
 cd frontend
@@ -129,54 +146,46 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 ## Project Structure
 
 ```
-├── backend/                    # Spring Boot application
-│   ├── src/main/java/         # Java source code
-│   │   └── com/skydrive/
-│   │       ├── controller/    # REST endpoints
-│   │       ├── service/       # Business logic
-│   │       ├── entity/        # JPA entities
-│   │       ├── dto/           # Data transfer objects
-│   │       ├── repository/    # Data access layer
-│   │       ├── config/        # Configuration classes
-│   │       └── exception/     # Custom exceptions
-│   └── pom.xml               # Maven configuration
+├── src/                        # Spring Boot (Backend) Source Code
+│   ├── main/
+│   │   ├── java/com/skydrive/skydrive/
+│   │   │   ├── controller/    # REST API Controllers
+│   │   │   ├── service/       # Business Logic Services
+│   │   │   ├── entity/        # JPA Entities / Models
+│   │   │   ├── repository/    # JPA Repositories (Database access)
+│   │   │   ├── dto/           # Data Transfer Objects
+│   │   │   ├── config/        # Spring Security / Swagger / S3 Configs
+│   │   │   └── exception/     # Global Error Handling
+│   │   └── resources/
+│   │       ├── application.properties        # Default configuration
+│   │       └── application-docker.properties # Docker profile configuration
+│   └── test/                  # Backend unit/integration tests
 │
-├── frontend/                   # Next.js application
+├── frontend/                   # Next.js 14 (Frontend) Application
 │   ├── src/
-│   │   ├── app/              # Next.js app directory
-│   │   ├── components/       # React components
-│   │   ├── lib/              # Utilities and helpers
-│   │   └── services/         # API services
-│   └── package.json          # NPM dependencies
+│   │   ├── app/              # Next.js pages and routing
+│   │   ├── components/       # Reusable UI React components
+│   │   ├── lib/              # API clients & UI state utilities
+│   │   ├── services/         # Frontend API integration services
+│   │   └── store/            # Zustand stores
+│   └── package.json          # Frontend dependencies
 │
-├── docker-compose.yml         # Docker Compose configuration
-├── Dockerfile                 # Backend Docker image
-└── README.md                  # This file
+├── docker-compose.yml         # Docker orchestration (Postgres, MinIO, Redis, ClamAV)
+├── Dockerfile                 # Backend containerization
+├── .env.template              # Local Environment configuration template
+└── README.md                  # Project overview and setup instructions
 ```
 
-## API Endpoints
+## API Documentation
 
-### Authentication
-- `POST /auth/register` - Register a new user
-- `POST /auth/login` - Login user
-- `POST /auth/logout` - Logout user
+The backend API is documented using Swagger/OpenAPI. Once the backend is running, you can access the interactive documentation at:
+👉 **[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)**
 
-### Files
-- `GET /files` - List all files
-- `POST /files/upload` - Upload a file
-- `GET /files/{id}` - Get file details
-- `DELETE /files/{id}` - Delete a file
-- `GET /files/{id}/download` - Download a file
-
-### Folders
-- `GET /folders` - List all folders
-- `POST /folders` - Create a new folder
-- `PUT /folders/{id}` - Update folder
-- `DELETE /folders/{id}` - Delete folder
-
-### Sharing
-- `POST /share` - Share a file
-- `GET /shared` - Get shared files
+### Key Endpoint Groups:
+- **Authentication**: `POST /auth/register`, `POST /auth/login`
+- **Files**: Upload, download, delete, view versions, and track activity
+- **Folders**: Hierarchical folder structures
+- **Sharing**: Share link generation and tracking
 
 ## Development
 
