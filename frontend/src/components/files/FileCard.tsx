@@ -17,7 +17,8 @@ import {
   Share2, 
   Move, 
   History, 
-  Trash2
+  Trash2,
+  Eye
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -37,7 +38,8 @@ export default function FileCard({ item }: FileCardProps) {
     setCurrentFolder, 
     setShareOpen, 
     setVersionHistoryOpen, 
-    setMoveFileOpen 
+    setMoveFileOpen,
+    setPreviewOpen
   } = useUIStore();
 
   // Close dropdown when clicking outside
@@ -196,7 +198,10 @@ export default function FileCard({ item }: FileCardProps) {
       className="group bg-gradient-to-br from-card to-secondary/10 hover:bg-secondary/25 border border-border/40 hover:border-primary/25 rounded-[16px] transition-all duration-150 flex flex-col h-44 overflow-hidden relative hover-card-shift shadow-sm"
     >
       {/* File Preview/Thumbnail Container */}
-      <div className="flex-grow bg-card/50 border-b border-border/30 flex items-center justify-center relative p-5 bg-radial from-card to-secondary/15">
+      <div 
+        onClick={() => setPreviewOpen(true, item)}
+        className="flex-grow bg-card/50 border-b border-border/30 flex items-center justify-center relative p-5 bg-radial from-card to-secondary/15 cursor-pointer"
+      >
         <Icon className={`w-11 h-11 transition-transform duration-250 group-hover:scale-105 ${iconStyle}`} />
       </div>
 
@@ -234,6 +239,17 @@ export default function FileCard({ item }: FileCardProps) {
                 transition={{ duration: 0.12 }}
                 className="absolute right-0 bottom-8 w-44 bg-card border border-border/80 rounded-xl shadow-xl z-20 py-1.5 text-xs font-semibold overflow-hidden glass"
               >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewOpen(true, item);
+                    setMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors cursor-pointer text-left"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  Preview
+                </button>
                 <button
                   onClick={(e) => {
                     e.stopPropagation();

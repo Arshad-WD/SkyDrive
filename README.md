@@ -2,6 +2,8 @@
 
 A modern, full-stack file storage and management application with real-time collaboration features, built with Spring Boot and Next.js.
 
+![SkyDrive Demo](./skydrive_demo.webp)
+
 ## Overview
 
 SkyDrive is a cloud file storage platform that allows users to securely upload, organize, share, and manage their files. It features user authentication, file versioning, activity tracking, and a responsive web interface.

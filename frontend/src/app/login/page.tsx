@@ -6,7 +6,7 @@ import * as zod from "zod";
 import { useAuthStore } from "@/store/authStore";
 import { AuthService } from "@/services/auth.service";
 import { useMutation } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Cloud, Mail, Lock, Loader2, ArrowRight } from "lucide-react";
 import { useState } from "react";
@@ -22,6 +22,7 @@ type LoginFormData = zod.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const loginStore = useAuthStore((state) => state.login);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -38,7 +39,8 @@ export default function LoginPage() {
     mutationFn: (data: LoginFormData) => AuthService.login(data),
     onSuccess: (response, variables) => {
       loginStore(response.token, variables.email);
-      router.push("/dashboard");
+      const redirectPath = searchParams.get("redirect") || "/dashboard";
+      router.push(redirectPath);
     },
     onError: (err: any) => {
       setErrorMsg(

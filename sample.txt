@@ -1,0 +1,6 @@
+Hello SkyDrive!
+
+This is a sample text file containing some placeholder content to demonstrate the new inline preview feature in action.
+SkyDrive supports previewing text documents, PDFs, images, and videos.
+
+Enjoy real-time file management!

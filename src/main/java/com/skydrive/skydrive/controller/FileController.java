@@ -17,6 +17,7 @@ import com.skydrive.skydrive.dto.file.FileResponse;
 import com.skydrive.skydrive.dto.file.FileVersionResponse;
 import com.skydrive.skydrive.dto.file.MoveFileRequest;
 import com.skydrive.skydrive.dto.file.ShareLinkResponse;
+import com.skydrive.skydrive.dto.file.ShareSettingsRequest;
 import com.skydrive.skydrive.entity.DriveFile;
 import com.skydrive.skydrive.entity.FileVersion;
 import com.skydrive.skydrive.service.FileService;
@@ -123,6 +124,29 @@ public class FileController {
     @PostMapping("/{id}/share")
     public ShareLinkResponse shareLink(@PathVariable Long id){
         return fileService.generateShareLink(id);
+    }
+
+    @PutMapping("/{id}/share-settings")
+    public ShareLinkResponse updateShareSettings(@PathVariable Long id, @RequestBody ShareSettingsRequest request) {
+        return fileService.updateShareSettings(id, request);
+    }
+
+    @GetMapping("/{id}/preview")
+    public ResponseEntity<org.springframework.core.io.Resource> previewFile(@PathVariable Long id) throws Exception {
+        DriveFile fileEntity = fileService.getFile(id);
+
+        java.io.InputStream inputStream = fileStorageService.download(fileEntity.getStoredName());
+        org.springframework.core.io.Resource resource = new org.springframework.core.io.InputStreamResource(inputStream) {
+            @Override
+            public long contentLength() {
+                return fileEntity.getSize();
+            }
+        };
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(fileEntity.getContentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileEntity.getOriginalName() + "\"")
+                .body(resource);
     }
 
     @PostMapping("/{id}/versions")

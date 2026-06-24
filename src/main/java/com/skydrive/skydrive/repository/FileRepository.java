@@ -11,6 +11,7 @@ import com.skydrive.skydrive.entity.DriveFile;
 public interface FileRepository extends JpaRepository<DriveFile, Long> {
    List<DriveFile> findByOwnerId(Long ownerId);
    List<DriveFile> findByFolderId(Long folderId);
+   List<DriveFile> findByFolderIdAndDeletedFalse(Long folderId);
    List<DriveFile> findByOwnerIdAndOriginalNameContainingIgnoreCase(Long ownerId,String keyword);
 
    List<DriveFile> findByOwnerIdAndDeletedFalse(Long ownerId);

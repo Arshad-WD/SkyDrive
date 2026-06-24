@@ -19,7 +19,8 @@ import {
   History, 
   Trash2,
   Inbox,
-  Users
+  Users,
+  Eye
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -39,7 +40,8 @@ export default function FileList({ items }: FileListProps) {
     setCurrentFolder, 
     setShareOpen, 
     setVersionHistoryOpen, 
-    setMoveFileOpen 
+    setMoveFileOpen,
+    setPreviewOpen
   } = useUIStore();
 
   // Close dropdown when clicking outside
@@ -152,10 +154,8 @@ export default function FileList({ items }: FileListProps) {
             {items.map((item) => (
               <tr
                 key={`${item.isFolder ? "folder" : "file"}-${item.id}`}
-                onClick={item.isFolder ? () => handleFolderClick(item) : undefined}
-                className={`hover:bg-secondary/45 transition-colors group ${
-                  item.isFolder ? "cursor-pointer" : ""
-                }`}
+                onClick={item.isFolder ? () => handleFolderClick(item) : () => setPreviewOpen(true, item)}
+                className="hover:bg-secondary/45 transition-colors group cursor-pointer"
               >
                 {/* Name */}
                 <td className="py-2.5 px-5 max-w-xs truncate">
@@ -203,6 +203,17 @@ export default function FileList({ items }: FileListProps) {
                     >
                       {!item.isFolder && (
                         <>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setPreviewOpen(true, item);
+                              setActiveMenuId(null);
+                            }}
+                            className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors cursor-pointer text-left"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Preview
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

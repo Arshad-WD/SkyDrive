@@ -61,7 +61,7 @@ api.request = async function (config: any): Promise<any> {
   }
 
   // Caching for GET requests (SWR pattern)
-  if (typeof window === "undefined") {
+  if (typeof window === "undefined" || config.responseType === "blob") {
     return originalRequest.call(this, config);
   }
 

@@ -39,7 +39,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex){
-
+        ex.printStackTrace(); // Log the exception for debugging
         ErrorResponse response = 
             ErrorResponse.builder()
             .timestamp(LocalDateTime.now())
@@ -48,6 +48,7 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
     }
+
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidation(

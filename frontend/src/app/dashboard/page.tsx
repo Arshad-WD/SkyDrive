@@ -47,6 +47,7 @@ import ShareDialog from "@/components/sharing/ShareDialog";
 import VersionHistoryDialog from "@/components/versioning/VersionHistoryDialog";
 import MoveFileDialog from "@/components/folders/MoveFileDialog";
 import UploadQueue from "@/components/upload/UploadQueue";
+import FilePreviewDialog from "@/components/files/FilePreviewDialog";
 import { motion, AnimatePresence } from "framer-motion";
 
 const getFileIconMeta = (contentType: string) => {
@@ -127,7 +128,8 @@ export default function DashboardPage() {
     setCurrentFolder,
     setShareOpen,
     setVersionHistoryOpen,
-    setMoveFileOpen
+    setMoveFileOpen,
+    setPreviewOpen
   } = useUIStore();
 
   const [errorMessage, setErrorMessage] = useState("");
@@ -593,7 +595,8 @@ export default function DashboardPage() {
                                   return (
                                     <tr
                                       key={file.id}
-                                      className="hover:bg-[#f0f4f9] dark:hover:bg-secondary/40 transition-colors group border-b border-border/30"
+                                      onClick={() => setPreviewOpen(true, file)}
+                                      className="hover:bg-[#f0f4f9] dark:hover:bg-secondary/40 transition-colors group border-b border-border/30 cursor-pointer"
                                     >
                                       {/* Name */}
                                       <td className="py-3 px-5 max-w-xs truncate">
@@ -646,6 +649,17 @@ export default function DashboardPage() {
                                             ref={fileDropdownRef}
                                             className="absolute right-5 mt-1 w-44 bg-card border border-border/80 rounded-xl shadow-xl z-20 py-1 text-xs font-semibold overflow-hidden text-left glass"
                                           >
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setPreviewOpen(true, file);
+                                                setActiveFileMenuId(null);
+                                              }}
+                                              className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors cursor-pointer text-left"
+                                            >
+                                              <Eye className="w-3.5 h-3.5" />
+                                              Preview
+                                            </button>
                                             <button
                                               onClick={(e) => {
                                                 e.stopPropagation();
@@ -729,7 +743,10 @@ export default function DashboardPage() {
                                   className="group bg-gradient-to-br from-card to-secondary/10 hover:bg-secondary/25 border border-border/40 hover:border-primary/25 rounded-[16px] transition-all duration-150 flex flex-col h-44 overflow-hidden relative hover-card-shift shadow-sm"
                                 >
                                   {/* File Preview Container */}
-                                  <div className="flex-grow bg-card/50 border-b border-border/30 flex items-center justify-center relative p-5 bg-radial from-card to-secondary/15">
+                                  <div 
+                                    onClick={() => setPreviewOpen(true, file)}
+                                    className="flex-grow bg-card/50 border-b border-border/30 flex items-center justify-center relative p-5 bg-radial from-card to-secondary/15 cursor-pointer"
+                                  >
                                     <FileIconComponent className={`w-11 h-11 transition-transform duration-250 group-hover:scale-105 ${fileMeta.color.split(' ')[0]}`} />
                                   </div>
 
@@ -764,6 +781,17 @@ export default function DashboardPage() {
                                           ref={fileDropdownRef}
                                           className="absolute right-0 bottom-8 w-44 bg-card border border-border/80 rounded-xl shadow-xl z-20 py-1.5 text-xs font-semibold overflow-hidden text-left glass"
                                         >
+                                          <button
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setPreviewOpen(true, file);
+                                              setActiveFileMenuId(null);
+                                            }}
+                                            className="w-full flex items-center gap-2 px-3.5 py-2 hover:bg-secondary text-foreground/80 hover:text-foreground transition-colors cursor-pointer text-left"
+                                          >
+                                            <Eye className="w-3.5 h-3.5" />
+                                            Preview
+                                          </button>
                                           <button
                                             onClick={(e) => {
                                               e.stopPropagation();
@@ -873,6 +901,7 @@ export default function DashboardPage() {
       <VersionHistoryDialog />
       <MoveFileDialog />
       <UploadQueue />
+      <FilePreviewDialog />
     </div>
   );
 }

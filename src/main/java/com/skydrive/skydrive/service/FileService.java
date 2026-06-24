@@ -26,6 +26,8 @@ import com.skydrive.skydrive.repository.FolderRepository;
 import com.skydrive.skydrive.repository.ShareLinkRespoistory;
 import com.skydrive.skydrive.storage.FileStorageService;
 
+import org.springframework.beans.factory.annotation.Value;
+import com.skydrive.skydrive.dto.file.ShareSettingsRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -33,6 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 @Service
 @RequiredArgsConstructor
 public class FileService {
+
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     private final FileRepository fileRepository;
     private final FolderRepository folderRepository;
@@ -141,7 +146,7 @@ public class FileService {
         }
 
         return fileRepository
-                .findByFolderId(folderId)
+                .findByFolderIdAndDeletedFalse(folderId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -299,6 +304,7 @@ public class FileService {
             shareLink = ShareLink.builder()
                         .token(UUID.randomUUID().toString().replace("-", ""))
                         .file(file)
+                        .isPublic(true)
                         .build();
 
             shareLink = shareLinkRespoistory.save(shareLink);
@@ -308,7 +314,35 @@ public class FileService {
 
         log.info("User {} shared file {}", currentUser.getId(), file.getOriginalName());
 
-        return ShareLinkResponse.builder().url("http://localhost:8080/share/"+ shareLink.getToken()).build();
+        return ShareLinkResponse.builder()
+                .url(frontendUrl + "/share/" + shareLink.getToken())
+                .isPublic(shareLink.isPublic())
+                .allowedEmails(shareLink.getAllowedEmails())
+                .build();
+    }
+
+    public ShareLinkResponse updateShareSettings(Long fileId, ShareSettingsRequest request) {
+        User currentUser = userService.getCurrentUser();
+
+        DriveFile file = fileRepository.findById(fileId)
+                        .orElseThrow();
+
+        if(!file.getOwner().getId().equals(currentUser.getId())){
+            throw new AccessDeniedException("Access Denied");
+        }
+
+        ShareLink shareLink = shareLinkRespoistory.findByFileId(fileId)
+                .orElseThrow(() -> new RuntimeException("Share link not found for this file"));
+
+        shareLink.setPublic(request.isPublic());
+        shareLink.setAllowedEmails(request.getAllowedEmails());
+        shareLink = shareLinkRespoistory.save(shareLink);
+
+        return ShareLinkResponse.builder()
+                .url(frontendUrl + "/share/" + shareLink.getToken())
+                .isPublic(shareLink.isPublic())
+                .allowedEmails(shareLink.getAllowedEmails())
+                .build();
     }
 
     @CacheEvict( value = {"my-files", "file-search"}, allEntries = true)

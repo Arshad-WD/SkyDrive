@@ -58,7 +58,7 @@ export const FileService = {
       responseType: "blob",
     });
     
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const url = window.URL.createObjectURL(response.data);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", fileName);
@@ -127,7 +127,7 @@ export const FileService = {
       responseType: "blob",
     });
     
-    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const url = window.URL.createObjectURL(response.data);
     const link = document.createElement("a");
     link.href = url;
     link.setAttribute("download", fileName);
@@ -144,6 +144,36 @@ export const FileService = {
   async generatePresignedUrl(fileId: number): Promise<PresignedUrlResponse> {
     const response = await api.get<PresignedUrlResponse>(`/api/files/${fileId}/presigned`);
     return response.data;
+  },
+
+  async updateShareSettings(fileId: number, settings: { isPublic: boolean; allowedEmails: string }): Promise<ShareLinkResponse> {
+    const response = await api.put<ShareLinkResponse>(`/api/files/${fileId}/share-settings`, settings);
+    return response.data;
+  },
+
+  async getSharedFileInfo(token: string): Promise<{
+    originalName: string;
+    size: number;
+    contentType: string;
+    ownerName: string;
+    isPublic: boolean;
+    authRequired: boolean;
+    allowed: boolean;
+  }> {
+    const response = await api.get(`/share/${token}/info`);
+    return response.data;
+  },
+
+  getSharedFileDownloadUrl(token: string, download = false): string {
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+    return `${baseUrl}/share/${token}/download?download=${download}`;
+  },
+
+  async getFilePreviewBlobUrl(fileId: number): Promise<string> {
+    const response = await api.get(`/api/files/${fileId}/preview`, {
+      responseType: "blob",
+    });
+    return window.URL.createObjectURL(response.data);
   },
 };
 

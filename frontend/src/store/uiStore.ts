@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { FileResponse } from "@/services/file.service";
 
 export interface BreadcrumbItem {
   id: number | null;
@@ -29,8 +30,10 @@ interface UIState {
   isShareOpen: boolean;
   isVersionHistoryOpen: boolean;
   isMoveFileOpen: boolean;
+  isPreviewOpen: boolean;
   activeFileId: number | null;
   activeFileName: string | null;
+  previewFile: FileResponse | null;
 
   toggleViewMode: () => void;
   setCurrentFolder: (folderId: number | null, breadcrumbs?: BreadcrumbItem[]) => void;
@@ -52,6 +55,7 @@ interface UIState {
   setShareOpen: (open: boolean, fileId?: number | null, fileName?: string | null) => void;
   setVersionHistoryOpen: (open: boolean, fileId?: number | null, fileName?: string | null) => void;
   setMoveFileOpen: (open: boolean, fileId?: number | null, fileName?: string | null) => void;
+  setPreviewOpen: (open: boolean, file?: FileResponse | null) => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -67,8 +71,10 @@ export const useUIStore = create<UIState>((set, get) => ({
   isShareOpen: false,
   isVersionHistoryOpen: false,
   isMoveFileOpen: false,
+  isPreviewOpen: false,
   activeFileId: null,
   activeFileName: null,
+  previewFile: null,
 
   toggleViewMode: () => set((state) => ({ viewMode: state.viewMode === "grid" ? "list" : "grid" })),
   
@@ -149,5 +155,10 @@ export const useUIStore = create<UIState>((set, get) => ({
     isMoveFileOpen: open,
     activeFileId: fileId,
     activeFileName: fileName
+  }),
+
+  setPreviewOpen: (open, file = null) => set({
+    isPreviewOpen: open,
+    previewFile: file,
   }),
 }));

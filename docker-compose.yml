@@ -42,7 +42,10 @@ services:
 
     ports:
       - "3310:3310"
+    volumes:
+      - ./clamd.conf:/etc/clamav/clamd.conf:ro
     restart: unless-stopped
+
 
   backend:
     build: .

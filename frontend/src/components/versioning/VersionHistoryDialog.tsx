@@ -1,9 +1,12 @@
 "use client";
 
 import { useUIStore } from "@/store/uiStore";
-import { FileService, FileVersionResponse } from "@/services/file.service";
+import { FileService } from "@/services/file.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { History, X, Download, RotateCcw, Upload, RefreshCw, AlertCircle } from "lucide-react";
+import {
+  History, X, Download, RotateCcw,
+  Upload, RefreshCw, AlertCircle, Clock, HardDrive, CloudUpload
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { formatBytes, formatDate } from "@/lib/utils";
 import { useRef, useState } from "react";
@@ -13,15 +16,14 @@ export default function VersionHistoryDialog() {
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState("");
+  const [restoringId, setRestoringId] = useState<number | null>(null);
 
-  // Fetch file versions
   const { data: versions, isLoading, isError, refetch } = useQuery({
     queryKey: ["versions", activeFileId],
     queryFn: () => FileService.getVersions(activeFileId!),
     enabled: isVersionHistoryOpen && !!activeFileId,
   });
 
-  // Upload new version mutation
   const uploadMutation = useMutation({
     mutationFn: (file: File) => FileService.uploadVersion(activeFileId!, file),
     onSuccess: () => {
@@ -35,24 +37,19 @@ export default function VersionHistoryDialog() {
     },
   });
 
-  // Restore version mutation
   const restoreMutation = useMutation({
     mutationFn: (versionId: number) => FileService.restoreVersion(versionId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["files"] });
+      setRestoringId(null);
       setVersionHistoryOpen(false);
     },
+    onError: () => setRestoringId(null),
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      uploadMutation.mutate(file);
-    }
-  };
-
-  const triggerUpload = () => {
-    fileInputRef.current?.click();
+    if (file) uploadMutation.mutate(file);
   };
 
   const handleDownload = async (versionId: number, versionNumber: number) => {
@@ -61,7 +58,6 @@ export default function VersionHistoryDialog() {
     const ext = nameParts.pop();
     const baseName = nameParts.join(".");
     const versionedName = `${baseName}-v${versionNumber}.${ext}`;
-    
     try {
       await FileService.downloadVersion(versionId, versionedName);
     } catch (err) {
@@ -69,9 +65,15 @@ export default function VersionHistoryDialog() {
     }
   };
 
+  const handleRestore = (versionId: number) => {
+    setRestoringId(versionId);
+    restoreMutation.mutate(versionId);
+  };
+
   const handleClose = () => {
     setVersionHistoryOpen(false);
     setUploadError("");
+    setRestoringId(null);
   };
 
   return (
@@ -84,150 +86,204 @@ export default function VersionHistoryDialog() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/65 backdrop-blur-md"
+            className="fixed inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-sm"
           />
 
-          {/* Modal Container */}
+          {/* Modal */}
           <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 15 }}
+            initial={{ scale: 0.95, opacity: 0, y: 16 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 15 }}
-            transition={{ type: "spring", duration: 0.35, bounce: 0.15 }}
-            className="w-full max-w-lg rounded-[22px] overflow-hidden shadow-2xl relative z-10 glass-panel border border-border/40"
+            exit={{ scale: 0.95, opacity: 0, y: 16 }}
+            transition={{ type: "spring", duration: 0.38, bounce: 0.14 }}
+            className="relative z-10 w-full max-w-[480px] rounded-2xl overflow-hidden bg-card border border-border/40 dark:border-border/60 shadow-2xl shadow-black/20 dark:shadow-black/50 flex flex-col max-h-[88vh]"
           >
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-border/40 px-6 py-4.5">
-              <div className="flex items-center gap-2.5">
-                <div className="p-1.5 rounded-lg bg-primary/10 text-primary border border-primary/10">
-                  <History className="w-4.5 h-4.5" />
-                </div>
-                <h3 className="font-extrabold text-base text-foreground tracking-tight">Version History</h3>
-              </div>
-              <button
-                onClick={handleClose}
-                className="p-1.5 rounded-xl hover:bg-secondary/70 border border-transparent hover:border-border/30 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer active:scale-95"
-              >
-                <X className="w-4.5 h-4.5" />
-              </button>
-            </div>
+            {/* Top accent */}
+            <div className="h-0.5 w-full bg-gradient-to-r from-[#0b57d0]/60 via-[#0b57d0] to-[#0b57d0]/60 dark:from-[#8ab4f8]/40 dark:via-[#8ab4f8] dark:to-[#8ab4f8]/40 shrink-0" />
 
-            {/* Content Body */}
-            <div className="p-6 max-h-[55vh] overflow-y-auto space-y-5 scrollbar-thin">
-              {/* File Info & Upload Action */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-secondary/15 rounded-2xl p-4 border border-border/40">
-                <div className="min-w-0">
-                  <span className="block text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider mb-1">
-                    File Name
-                  </span>
-                  <p className="text-sm font-bold text-foreground truncate max-w-xs sm:max-w-md">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#e8f0fe] dark:bg-[#004a77]/40 border border-[#d2e3fc] dark:border-[#004a77]">
+                  <History className="w-4 h-4 text-[#0b57d0] dark:text-[#8ab4f8]" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-sm text-foreground leading-none">Version History</h3>
+                  <p className="text-[11px] text-muted-foreground mt-0.5 truncate max-w-[240px]">
                     {activeFileName || "Loading..."}
                   </p>
                 </div>
-                <div className="shrink-0">
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
+              </div>
+              <button
+                onClick={handleClose}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-secondary/70 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Stats + Upload bar */}
+            <div className="px-5 pb-4 shrink-0 border-b border-border/30">
+              <div className="flex items-center justify-between">
+                {/* Mini stats */}
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                    <History className="w-3.5 h-3.5" />
+                    <span className="font-medium">
+                      {versions ? `${versions.length} version${versions.length !== 1 ? "s" : ""}` : "—"}
+                    </span>
+                  </div>
+                  {versions && versions.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                      <HardDrive className="w-3.5 h-3.5" />
+                      <span className="font-medium">{formatBytes(versions.reduce((a, v) => a + v.size, 0))}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Upload button */}
+                <div>
+                  <input type="file" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                   <button
-                    onClick={triggerUpload}
+                    onClick={() => fileInputRef.current?.click()}
                     disabled={uploadMutation.isPending}
-                    className="flex items-center gap-2 px-4.5 py-2 text-xs font-bold text-white rounded-xl bg-primary hover:bg-primary/95 transition-all duration-150 cursor-pointer shadow-md shadow-primary/15 hover:shadow-primary/30 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95 border border-primary/20"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-[#0b57d0] dark:bg-[#8ab4f8] text-white dark:text-[#0f0f11] hover:bg-[#0a4ab5] dark:hover:bg-[#a8c7fb] transition-all duration-150 cursor-pointer active:scale-95 disabled:opacity-50 shadow-sm"
                   >
-                    {uploadMutation.isPending ? (
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Upload className="w-3.5 h-3.5" />
-                    )}
-                    Upload New Version
+                    {uploadMutation.isPending
+                      ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      : <CloudUpload className="w-3.5 h-3.5" />
+                    }
+                    Upload version
                   </button>
                 </div>
               </div>
 
+              {/* Upload error */}
               {uploadError && (
-                <div className="bg-destructive/10 border border-destructive/25 text-destructive rounded-xl p-3.5 text-xs font-bold flex items-center gap-2">
-                  <AlertCircle className="w-4 h-4 shrink-0" />
+                <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/5 border border-destructive/20 text-destructive text-xs font-medium">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                   <span>{uploadError}</span>
                 </div>
               )}
+            </div>
 
-              {/* Version History List */}
+            {/* Version list */}
+            <div className="flex-1 overflow-y-auto px-5 py-4 scrollbar-thin">
               {isLoading ? (
-                <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
-                  <RefreshCw className="w-8 h-8 animate-spin text-primary mb-2" />
-                  <span className="text-xs font-semibold">Loading versions...</span>
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted-foreground">
+                  <RefreshCw className="w-8 h-8 animate-spin text-[#0b57d0] dark:text-[#8ab4f8]" />
+                  <span className="text-xs font-medium">Loading versions…</span>
                 </div>
               ) : isError ? (
-                <div className="bg-destructive/10 border border-destructive/25 text-destructive rounded-xl p-3.5 text-xs font-semibold text-center">
+                <div className="rounded-xl p-4 bg-destructive/5 border border-destructive/20 text-destructive text-xs font-medium text-center">
                   Failed to fetch versions. Please try again.
                 </div>
               ) : !versions || versions.length === 0 ? (
-                <div className="text-center py-10 border border-dashed border-border/60 rounded-2xl bg-secondary/5">
-                  <p className="text-xs font-bold text-muted-foreground">No version history available.</p>
-                  <p className="text-[10px] text-muted-foreground/75 mt-1 font-medium">New versions will appear once you upload files of the same name.</p>
+                <div className="flex flex-col items-center justify-center py-12 gap-3 text-center">
+                  <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-secondary/50 border border-border/40">
+                    <Upload className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-foreground/80">No version history</p>
+                    <p className="text-[11px] text-muted-foreground mt-1 max-w-[220px] leading-relaxed">
+                      Upload a new version to start tracking revisions for this file.
+                    </p>
+                  </div>
                 </div>
               ) : (
-                <div className="relative pl-6 space-y-6 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-border/30">
-                  {versions.map((ver, idx) => (
-                    <div key={ver.id} className="relative group">
-                      {/* Timeline Dot */}
-                      <span className={`absolute -left-[20px] top-1.5 w-3.5 h-3.5 rounded-full border-2 border-card z-10 ${
-                        idx === 0 ? "bg-primary glow-primary ring-2 ring-primary/25" : "bg-muted-foreground/40"
-                      }`} />
+                /* Timeline */
+                <div className="relative">
+                  {/* Vertical line */}
+                  <div className="absolute left-[17px] top-3 bottom-3 w-px bg-border/50" />
 
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-bold text-sm text-foreground">
-                              Version {ver.versionNumber}
-                            </span>
-                            {idx === 0 && (
-                              <span className="px-1.5 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold">
-                                Current
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">
-                            Uploaded {formatDate(ver.createdAt)}
-                          </p>
-                          <span className="inline-block text-[10px] font-bold text-muted-foreground/85 bg-secondary/35 rounded-full px-2.5 py-0.5 mt-2 border border-border/30">
-                            {formatBytes(ver.size)}
-                          </span>
-                        </div>
-
-                        {/* Actions */}
-                        <div className="flex items-center gap-1.5 shrink-0 opacity-80 group-hover:opacity-100 transition-all duration-200">
-                          <button
-                            onClick={() => handleDownload(ver.id, ver.versionNumber)}
-                            className="p-2 rounded-lg hover:bg-secondary/70 border border-transparent hover:border-border/35 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer active:scale-95"
-                            title="Download this version"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
-                          {idx > 0 && (
-                            <button
-                              onClick={() => restoreMutation.mutate(ver.id)}
-                              disabled={restoreMutation.isPending}
-                              className="p-2 rounded-lg hover:bg-secondary/70 border border-transparent hover:border-border/35 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer disabled:opacity-50 active:scale-95"
-                              title="Restore to this version"
-                            >
-                              <RotateCcw className="w-4 h-4" />
-                            </button>
+                  <div className="space-y-2">
+                    {versions.map((ver, idx) => (
+                      <motion.div
+                        key={ver.id}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: idx * 0.05, duration: 0.25 }}
+                        className="relative flex gap-4 group"
+                      >
+                        {/* Timeline dot */}
+                        <div className="relative z-10 mt-3.5 shrink-0">
+                          {idx === 0 ? (
+                            <div className="w-[13px] h-[13px] rounded-full bg-[#0b57d0] dark:bg-[#8ab4f8] border-2 border-card shadow-sm shadow-[#0b57d0]/30 dark:shadow-[#8ab4f8]/20" />
+                          ) : (
+                            <div className="w-[13px] h-[13px] rounded-full bg-card border-2 border-border/60" />
                           )}
                         </div>
-                      </div>
-                    </div>
-                  ))}
+
+                        {/* Card */}
+                        <div
+                          className={`flex-1 flex items-center justify-between gap-3 px-3.5 py-3 rounded-xl border transition-all duration-200 mb-1 ${
+                            idx === 0
+                              ? "bg-[#e8f0fe]/50 dark:bg-[#004a77]/15 border-[#0b57d0]/15 dark:border-[#8ab4f8]/15"
+                              : "bg-secondary/10 dark:bg-secondary/5 border-border/30 hover:bg-secondary/25 dark:hover:bg-secondary/12 hover:border-border/50"
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            {/* Version number + badge */}
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold text-foreground">
+                                Version {ver.versionNumber}
+                              </span>
+                              {idx === 0 && (
+                                <span className="px-2 py-0.5 rounded-full bg-[#0b57d0]/10 dark:bg-[#8ab4f8]/10 text-[#0b57d0] dark:text-[#8ab4f8] border border-[#0b57d0]/15 dark:border-[#8ab4f8]/15 text-[9px] font-semibold uppercase tracking-wide">
+                                  Current
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Meta */}
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                                <Clock className="w-3 h-3" />
+                                {formatDate(ver.createdAt)}
+                              </span>
+                              <span className="text-muted-foreground/40">·</span>
+                              <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-medium">
+                                <HardDrive className="w-3 h-3" />
+                                {formatBytes(ver.size)}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Actions — visible on hover */}
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0">
+                            <button
+                              onClick={() => handleDownload(ver.id, ver.versionNumber)}
+                              title="Download this version"
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-secondary/70 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer active:scale-90"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </button>
+                            {idx > 0 && (
+                              <button
+                                onClick={() => handleRestore(ver.id)}
+                                disabled={restoreMutation.isPending}
+                                title="Restore to this version"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-150 cursor-pointer active:scale-90 disabled:opacity-40"
+                              >
+                                {restoringId === ver.id
+                                  ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  : <RotateCcw className="w-3.5 h-3.5" />
+                                }
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end px-6 py-4.5 border-t border-border/40">
+            <div className="flex justify-end px-5 py-3.5 border-t border-border/30 bg-secondary/10 dark:bg-secondary/5 shrink-0">
               <button
                 onClick={handleClose}
-                className="px-4.5 py-2 text-xs font-bold rounded-xl bg-secondary/70 hover:bg-secondary border border-border/60 hover:border-border transition-all duration-150 cursor-pointer active:scale-95"
+                className="px-4 py-2 rounded-full text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-secondary/60 transition-all duration-150 cursor-pointer"
               >
                 Close
               </button>

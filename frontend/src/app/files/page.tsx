@@ -23,6 +23,7 @@ import VersionHistoryDialog from "@/components/versioning/VersionHistoryDialog";
 import MoveFileDialog from "@/components/folders/MoveFileDialog";
 import DragDropOverlay from "@/components/upload/DragDropOverlay";
 import UploadQueue from "@/components/upload/UploadQueue";
+import FilePreviewDialog from "@/components/files/FilePreviewDialog";
 
 function FilesPageContent() {
   const queryClient = useQueryClient();
@@ -322,6 +323,7 @@ function FilesPageContent() {
       <VersionHistoryDialog />
       <MoveFileDialog />
       <UploadQueue />
+      <FilePreviewDialog />
     </div>
   );
 }

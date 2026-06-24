@@ -27,6 +27,13 @@ public class ShareLink {
     private LocalDateTime createdAt;
     private LocalDateTime expiresAt;
 
+    @Column(name = "is_public", nullable = false, columnDefinition = "boolean default true")
+    @Builder.Default
+    private boolean isPublic = true;
+
+    @Column(columnDefinition = "TEXT")
+    private String allowedEmails;
+
     @PrePersist
     public void prePersist(){
         createdAt = LocalDateTime.now();
