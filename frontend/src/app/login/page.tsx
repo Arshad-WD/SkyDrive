@@ -8,7 +8,7 @@ import { AuthService } from "@/services/auth.service";
 import { useMutation } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Cloud, Mail, Lock, Loader2, ArrowRight, Eye, EyeOff } from "lucide-react";
+import { Cloud, Mail, Lock, Loader2, ArrowRight, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -56,73 +56,93 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] text-[#0f172a] p-6">
+    <div className="min-h-screen flex items-center justify-center bg-[#fafafa] bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:24px_24px] text-[#0f172a] p-6">
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="w-full max-w-[440px] bg-white border border-[#e2e8f0] shadow-sm rounded-2xl p-8 space-y-6"
+        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-[460px] bg-white border border-[#e2e8f0] shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-[24px] p-8 md:p-10 relative overflow-hidden"
+        style={{
+          boxShadow: "0 10px 40px -10px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.02), inset 0 0 0 1px rgba(255,255,255,0.5)"
+        }}
       >
-        {/* Logo and branding */}
-        <div className="flex flex-col items-center text-center space-y-3">
-          <div className="w-11 h-11 rounded-xl bg-blue-600 flex items-center justify-center shadow-sm">
-            <Cloud className="w-5 h-5 text-white" />
+        {/* Subtle top indicator bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-600" />
+
+        {/* Technical layout metadata badge */}
+        <div className="flex justify-between items-center text-[10px] font-mono text-slate-400 uppercase tracking-widest border-b border-slate-100 pb-4 mb-6">
+          <span>vault_access_session</span>
+          <span className="flex items-center gap-1 font-bold text-blue-600">
+            <ShieldCheck className="w-3.5 h-3.5" /> SECURE
+          </span>
+        </div>
+
+        {/* Header Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/10">
+              <Cloud className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <span className="font-mono text-[10px] font-bold text-blue-600 uppercase tracking-widest block">Cloud Node</span>
+              <span className="font-extrabold text-lg tracking-tight block mt-0.5">SkyDrive Portal</span>
+            </div>
           </div>
           <div className="space-y-1">
-            <h1 className="text-xl font-bold tracking-tight text-[#0f172a]">
-              Sign in to SkyDrive
-            </h1>
-            <p className="text-xs text-slate-500 font-medium">
-              Enter your credentials to access your files
+            <h2 className="text-2xl font-black tracking-tight text-slate-900 leading-none">
+              Sign in to Workspace
+            </h2>
+            <p className="text-xs text-slate-500 font-semibold">
+              Enter email credentials to verify vault token ownership.
             </p>
           </div>
         </div>
 
         {errorMsg && (
-          <div className="bg-red-50 border border-red-100 text-red-700 rounded-xl p-3.5 text-xs font-semibold">
+          <div className="mt-6 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-xl p-3.5 text-xs font-bold shadow-sm">
             {errorMsg}
           </div>
         )}
 
-        {/* Input Fields Form */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {/* Email field */}
+        {/* Form Fields */}
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5 mt-6">
+          {/* Email input block */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Email Address
+            <label className="block text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+              Identity ID (Email)
             </label>
-            <div className={`relative flex items-center bg-white rounded-xl border transition-all duration-200 ${
-              errors.email ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-100" : "border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100"
+            <div className={`relative flex items-center bg-[#fdfdfd] rounded-xl border transition-all duration-300 focus-within:bg-white ${
+              errors.email ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-100" : "border-slate-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100"
             }`}>
               <Mail className="absolute left-3.5 w-4 h-4 text-slate-400" />
               <input
                 type="email"
-                placeholder="name@company.com"
+                placeholder="identity@skydrive.com"
                 {...register("email")}
-                className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-transparent text-sm text-[#0f172a] focus:outline-none placeholder-slate-400 font-medium"
+                className="w-full pl-10 pr-4 py-3 rounded-xl bg-transparent text-sm text-[#0f172a] focus:outline-none placeholder-slate-400 font-semibold"
               />
             </div>
             {errors.email && (
-              <span className="text-xs text-red-600 font-semibold block">
+              <span className="text-xs text-red-600 font-bold block mt-1">
                 {errors.email.message}
               </span>
             )}
           </div>
 
-          {/* Password field */}
+          {/* Password input block */}
           <div className="space-y-1.5">
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
-              Password
+            <label className="block text-[10px] font-mono font-bold text-slate-400 uppercase tracking-widest">
+              Security Key (Password)
             </label>
-            <div className={`relative flex items-center bg-white rounded-xl border transition-all duration-200 ${
-              errors.password ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-100" : "border-slate-300 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100"
+            <div className={`relative flex items-center bg-[#fdfdfd] rounded-xl border transition-all duration-300 focus-within:bg-white ${
+              errors.password ? "border-red-500 focus-within:border-red-500 focus-within:ring-2 focus-within:ring-red-100" : "border-slate-200 focus-within:border-blue-600 focus-within:ring-2 focus-within:ring-blue-100"
             }`}>
               <Lock className="absolute left-3.5 w-4 h-4 text-slate-400" />
               <input
                 type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 {...register("password")}
-                className="w-full pl-10 pr-11 py-2.5 rounded-xl bg-transparent text-sm text-[#0f172a] focus:outline-none placeholder-slate-400 font-medium"
+                className="w-full pl-10 pr-11 py-3 rounded-xl bg-transparent text-sm text-[#0f172a] focus:outline-none placeholder-slate-400 font-semibold"
               />
               <button
                 type="button"
@@ -133,52 +153,52 @@ export default function LoginPage() {
               </button>
             </div>
             {errors.password && (
-              <span className="text-xs text-red-600 font-semibold block">
+              <span className="text-xs text-red-600 font-bold block mt-1">
                 {errors.password.message}
               </span>
             )}
           </div>
 
-          {/* Remember me select checkbox */}
+          {/* Session remember checkbox option */}
           <div className="flex items-center">
-            <label className="flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer select-none">
+            <label className="flex items-center gap-2.5 text-xs font-bold text-slate-500 hover:text-slate-800 cursor-pointer select-none">
               <input
                 type="checkbox"
                 {...register("rememberMe")}
                 className="w-4 h-4 rounded border-slate-300 bg-white checked:bg-blue-600 text-blue-600 focus:ring-0 focus:ring-offset-0 transition duration-150 cursor-pointer"
               />
-              Remember my session
+              Keep my session token verified
             </label>
           </div>
 
-          {/* Submit Action button */}
+          {/* Action button */}
           <button
             type="submit"
             disabled={mutation.isPending}
-            className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_12px_rgba(15,23,42,0.15)] active:scale-[0.98] border border-slate-800"
           >
             {mutation.isPending ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Connecting...
+                Validating identity...
               </>
             ) : (
               <>
-                Sign In
+                Confirm Credentials
                 <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        {/* Redirect sign up link */}
-        <div className="text-center text-xs text-slate-500 font-semibold border-t border-slate-100 pt-4">
-          New to SkyDrive?{" "}
+        {/* Technical Footer redirect link */}
+        <div className="text-center text-xs text-slate-500 font-bold border-t border-slate-100 pt-5 mt-6">
+          Need workspace access?{" "}
           <Link
             href="/register"
-            className="text-blue-600 hover:text-blue-700 hover:underline transition-colors font-bold"
+            className="text-blue-600 hover:text-blue-700 hover:underline transition-colors"
           >
-            Create an account
+            Initialize free account
           </Link>
         </div>
       </motion.div>
