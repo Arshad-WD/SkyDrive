@@ -35,6 +35,9 @@ public class DriveFile {
 
     private Boolean deleted;
 
+    @Enumerated(EnumType.STRING)
+    private UploadStatus status;
+
     private LocalDateTime uploadedAt;
 
     private LocalDateTime deletedAt; 
@@ -45,6 +48,9 @@ public class DriveFile {
 
         if(deleted == null){
             deleted = false;
+        }
+        if(status == null){
+            status = UploadStatus.CLEAN;
         }
     }
 

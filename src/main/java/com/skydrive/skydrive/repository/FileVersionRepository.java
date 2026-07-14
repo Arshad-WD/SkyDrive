@@ -12,4 +12,5 @@ public interface FileVersionRepository extends JpaRepository<FileVersion, Long>{
     List<FileVersion> findByFileIdOrderByVersionNumberDesc(Long fileId);
     Optional<FileVersion> findTopByFileIdOrderByVersionNumberDesc(Long fileId);
 
+    List<FileVersion> findByStatusAndCreatedAtBefore(com.skydrive.skydrive.entity.UploadStatus status, java.time.LocalDateTime date);
 }

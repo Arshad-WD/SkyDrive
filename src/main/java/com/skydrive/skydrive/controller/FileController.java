@@ -23,6 +23,11 @@ import com.skydrive.skydrive.entity.FileVersion;
 import com.skydrive.skydrive.service.FileService;
 import com.skydrive.skydrive.storage.FileStorageService;
 
+import com.skydrive.skydrive.dto.file.InitiateUploadRequest;
+import com.skydrive.skydrive.dto.file.InitiateUploadResponse;
+import com.skydrive.skydrive.dto.file.InitiateVersionUploadRequest;
+import com.skydrive.skydrive.dto.file.InitiateChunkedUploadRequest;
+import com.skydrive.skydrive.dto.file.InitiateChunkedUploadResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +54,36 @@ public class FileController {
                 folderId
             );
         }
+
+    @PostMapping("/upload/initiate")
+    public InitiateUploadResponse initiateUpload(@Valid @RequestBody InitiateUploadRequest request) throws Exception {
+        return fileService.initiateUpload(request);
+    }
+
+    @PostMapping("/upload/complete")
+    public FileResponse completeUpload(@RequestParam("fileId") Long fileId) throws Exception {
+        return fileService.completeUpload(fileId);
+    }
+
+    @PostMapping("/versions/initiate")
+    public InitiateUploadResponse initiateVersionUpload(@Valid @RequestBody InitiateVersionUploadRequest request) throws Exception {
+        return fileService.initiateVersionUpload(request);
+    }
+
+    @PostMapping("/versions/complete")
+    public FileVersionResponse completeVersionUpload(@RequestParam("versionId") Long versionId) throws Exception {
+        return fileService.completeVersionUpload(versionId);
+    }
+
+    @PostMapping("/upload/initiate-chunked")
+    public InitiateChunkedUploadResponse initiateChunkedUpload(@Valid @RequestBody InitiateChunkedUploadRequest request) throws Exception {
+        return fileService.initiateChunkedUpload(request);
+    }
+
+    @PostMapping("/upload/complete-chunked")
+    public FileResponse completeChunkedUpload(@RequestParam("fileId") Long fileId, @RequestParam("totalChunks") Integer totalChunks) throws Exception {
+        return fileService.completeChunkedUpload(fileId, totalChunks);
+    }
 
     @GetMapping
     public List<FileResponse> getMyFiles(){

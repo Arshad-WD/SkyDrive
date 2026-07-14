@@ -1,5 +1,6 @@
 package com.skydrive.skydrive.dto.file;
 
+import com.skydrive.skydrive.entity.UploadStatus;
 import lombok.*;
 
 @Getter
@@ -13,4 +14,5 @@ public class FileResponse {
     private String originalName;
     private String contentType;
     private Long size;
+    private UploadStatus status;
 }

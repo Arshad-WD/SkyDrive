@@ -49,6 +49,26 @@ public class MinioStorageService implements FileStorageService {
     }
 
     @Override
+    public String upload(
+            String objectName,
+            InputStream inputStream,
+            long size,
+            String contentType
+    ) throws Exception {
+
+        minioClient.putObject(
+                PutObjectArgs.builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .stream(inputStream, size, -1L)
+                        .contentType(contentType)
+                        .build()
+        );
+
+        return objectName;
+    }
+
+    @Override
     public InputStream download(String objectName)
             throws Exception {
 
@@ -86,6 +106,19 @@ public class MinioStorageService implements FileStorageService {
                                                 .expiry(15, TimeUnit.MINUTES)
                                                 .build()
                 );
+    }
+
+    @Override
+    public String generatePresignedUploadUrl(String objectName) throws Exception {
+        return minioClient.getPresignedObjectUrl(
+                io.minio.GetPresignedObjectUrlArgs
+                        .builder()
+                        .bucket(bucketName)
+                        .object(objectName)
+                        .method(io.minio.Http.Method.PUT)
+                        .expiry(15, TimeUnit.MINUTES)
+                        .build()
+        );
     }
 
 }

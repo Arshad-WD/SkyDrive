@@ -24,6 +24,9 @@ public class FileVersion {
     private String contentType;
     private LocalDateTime createdAt;
 
+    @Enumerated(EnumType.STRING)
+    private UploadStatus status;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="file_id")
     private DriveFile file;
@@ -31,5 +34,8 @@ public class FileVersion {
     @PrePersist
     public void prePersist(){
         createdAt = LocalDateTime.now();
+        if (status == null) {
+            status = UploadStatus.CLEAN;
+        }
     }
 }

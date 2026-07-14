@@ -18,7 +18,9 @@ import {
   Move, 
   History, 
   Trash2,
-  Eye
+  Eye,
+  Loader2,
+  ShieldAlert
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -193,23 +195,47 @@ export default function FileCard({ item }: FileCardProps) {
   }
 
   // 2. Render Google Drive File Card (Vertical rectangular shape with preview panel)
+  const isClean = item.status === "CLEAN" || !item.status;
+
   return (
     <div
       className="group bg-gradient-to-br from-card to-secondary/10 hover:bg-secondary/25 border border-border/40 hover:border-primary/25 rounded-[16px] transition-all duration-150 flex flex-col h-44 overflow-hidden relative hover-card-shift shadow-sm"
     >
       {/* File Preview/Thumbnail Container */}
       <div 
-        onClick={() => setPreviewOpen(true, item)}
-        className="flex-grow bg-card/50 border-b border-border/30 flex items-center justify-center relative p-5 bg-radial from-card to-secondary/15 cursor-pointer"
+        onClick={() => {
+          if (isClean) {
+            setPreviewOpen(true, item);
+          }
+        }}
+        className={`flex-grow bg-card/50 border-b border-border/30 flex items-center justify-center relative p-5 bg-radial from-card to-secondary/15 ${isClean ? "cursor-pointer" : "cursor-not-allowed"}`}
       >
-        <Icon className={`w-11 h-11 transition-transform duration-250 group-hover:scale-105 ${iconStyle}`} />
+        {item.status === "PENDING_SCAN" ? (
+          <div className="flex flex-col items-center justify-center gap-1.5 text-center">
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
+            <span className="text-[10px] font-extrabold text-muted-foreground uppercase tracking-wider">Scanning...</span>
+          </div>
+        ) : item.status === "VIRUS_DETECTED" ? (
+          <div className="flex flex-col items-center justify-center gap-1.5 text-center">
+            <ShieldAlert className="w-8 h-8 text-destructive animate-pulse" />
+            <span className="text-[10px] font-extrabold text-destructive uppercase tracking-wider">Virus Blocked</span>
+          </div>
+        ) : (
+          <Icon className={`w-11 h-11 transition-transform duration-250 group-hover:scale-105 ${iconStyle}`} />
+        )}
       </div>
 
       {/* File Information Footer */}
       <div className="flex items-center justify-between p-3.5 select-none bg-card/30">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
           <div className={`p-1.5 rounded-lg border ${iconBg} ${iconStyle}`}>
-            <Icon className="w-4 h-4 shrink-0" />
+            {item.status === "PENDING_SCAN" ? (
+              <Loader2 className="w-4 h-4 shrink-0 animate-spin" />
+            ) : item.status === "VIRUS_DETECTED" ? (
+              <ShieldAlert className="w-4 h-4 shrink-0 text-destructive" />
+            ) : (
+              <Icon className="w-4 h-4 shrink-0" />
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <h4 className="font-bold text-xs text-foreground/90 truncate leading-snug" title={item.originalName}>
@@ -222,13 +248,14 @@ export default function FileCard({ item }: FileCardProps) {
         </div>
 
         {/* Dropdown Menu Container */}
-        <div className="relative shrink-0 ml-1" ref={dropdownRef}>
-          <button
-            onClick={() => setMenuOpen(!menuOpen)}
-            className="p-1 rounded-lg hover:bg-secondary/70 border border-transparent text-muted-foreground hover:text-foreground cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150"
-          >
-            <MoreVertical className="w-4 h-4" />
-          </button>
+        {isClean && (
+          <div className="relative shrink-0 ml-1" ref={dropdownRef}>
+            <button
+              onClick={() => setMenuOpen(!menuOpen)}
+              className="p-1 rounded-lg hover:bg-secondary/70 border border-transparent text-muted-foreground hover:text-foreground cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity duration-150"
+            >
+              <MoreVertical className="w-4 h-4" />
+            </button>
 
           <AnimatePresence>
             {menuOpen && (
@@ -308,6 +335,7 @@ export default function FileCard({ item }: FileCardProps) {
             )}
           </AnimatePresence>
         </div>
+        )}
       </div>
     </div>
   );

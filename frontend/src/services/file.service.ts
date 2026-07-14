@@ -5,6 +5,7 @@ export interface FileResponse {
   originalName: string;
   contentType: string;
   size: number;
+  status?: "UPLOADING" | "PENDING_SCAN" | "CLEAN" | "VIRUS_DETECTED";
 }
 
 export interface FileVersionResponse {
@@ -13,6 +14,7 @@ export interface FileVersionResponse {
   size: number;
   contentType: string;
   createdAt: string;
+  status?: "UPLOADING" | "PENDING_SCAN" | "CLEAN" | "VIRUS_DETECTED";
 }
 
 export interface ShareLinkResponse {
@@ -40,17 +42,102 @@ export const FileService = {
     folderId: number,
     onUploadProgress?: (progressEvent: any) => void
   ): Promise<FileResponse> {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("folderId", folderId.toString());
+    const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 
-    const response = await api.post<FileResponse>("/api/files/upload", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      onUploadProgress,
-    });
-    return response.data;
+    // 1. If file is small, use simple direct upload
+    if (file.size <= CHUNK_SIZE) {
+      const initiateResponse = await api.post<{ fileId: number; uploadUrl: string; storedName: string }>(
+        "/api/files/upload/initiate",
+        {
+          fileName: file.name,
+          folderId,
+          size: file.size,
+          contentType: file.type || "application/octet-stream"
+        }
+      );
+
+      const { fileId, uploadUrl } = initiateResponse.data;
+
+      const axios = (await import("axios")).default;
+      await axios.put(uploadUrl, file, {
+        headers: {
+          "Content-Type": file.type || "application/octet-stream"
+        },
+        onUploadProgress
+      });
+
+      const completeResponse = await api.post<FileResponse>(
+        "/api/files/upload/complete",
+        null,
+        {
+          params: { fileId }
+        }
+      );
+
+      return completeResponse.data;
+    }
+
+    // 2. Otherwise, use chunked upload
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    
+    // Initiate chunked upload
+    const initiateResponse = await api.post<{ fileId: number; uploadUrls: string[]; storedName: string }>(
+      "/api/files/upload/initiate-chunked",
+      {
+        fileName: file.name,
+        folderId,
+        size: file.size,
+        contentType: file.type || "application/octet-stream",
+        totalChunks
+      }
+    );
+
+    const { fileId, uploadUrls } = initiateResponse.data;
+    const axios = (await import("axios")).default;
+
+    // Track progress of each chunk
+    const loadedBytes = new Array(totalChunks).fill(0);
+    const triggerProgress = (chunkIdx: number, loaded: number) => {
+      loadedBytes[chunkIdx] = loaded;
+      if (onUploadProgress) {
+        const totalLoaded = loadedBytes.reduce((sum, val) => sum + val, 0);
+        onUploadProgress({
+          loaded: totalLoaded,
+          total: file.size
+        });
+      }
+    };
+
+    // Upload chunks sequentially
+    for (let i = 0; i < totalChunks; i++) {
+      const start = i * CHUNK_SIZE;
+      const end = Math.min(start + CHUNK_SIZE, file.size);
+      const chunk = file.slice(start, end);
+      const uploadUrl = uploadUrls[i];
+
+      await axios.put(uploadUrl, chunk, {
+        headers: {
+          "Content-Type": "application/octet-stream"
+        },
+        onUploadProgress: (progressEvent) => {
+          triggerProgress(i, progressEvent.loaded);
+        }
+      });
+    }
+
+    // Complete chunked upload
+    const completeResponse = await api.post<FileResponse>(
+      "/api/files/upload/complete-chunked",
+      null,
+      {
+        params: {
+          fileId,
+          totalChunks
+        }
+      }
+    );
+
+    return completeResponse.data;
   },
 
   async downloadFile(fileId: number, fileName: string): Promise<void> {
@@ -105,15 +192,37 @@ export const FileService = {
   },
 
   async uploadVersion(fileId: number, file: File): Promise<FileVersionResponse> {
-    const formData = new FormData();
-    formData.append("file", file);
-    
-    const response = await api.post<FileVersionResponse>(`/api/files/${fileId}/versions`, formData, {
+    // 1. Initiate version upload
+    const initiateResponse = await api.post<{ fileId: number; uploadUrl: string; storedName: string }>(
+      "/api/files/versions/initiate",
+      {
+        fileName: file.name,
+        fileId,
+        size: file.size,
+        contentType: file.type || "application/octet-stream"
+      }
+    );
+
+    const { fileId: versionId, uploadUrl } = initiateResponse.data;
+
+    // 2. Upload file directly to S3 / MinIO
+    const axios = (await import("axios")).default;
+    await axios.put(uploadUrl, file, {
       headers: {
-        "Content-Type": "multipart/form-data",
-      },
+        "Content-Type": file.type || "application/octet-stream"
+      }
     });
-    return response.data;
+
+    // 3. Complete version upload
+    const completeResponse = await api.post<FileVersionResponse>(
+      "/api/files/versions/complete",
+      null,
+      {
+        params: { versionId }
+      }
+    );
+
+    return completeResponse.data;
   },
 
   async getVersions(fileId: number): Promise<FileVersionResponse[]> {

@@ -19,6 +19,9 @@ SkyDrive is a cloud file storage platform that allows users to securely upload, 
 - 🎨 **Dark Mode Support** - Theme toggle for user preference
 - 🗑️ **Trash Management** - Soft delete with recovery
 - 🦠 **Virus Scanning** - Integrated ClamAV antivirus file scanning on upload
+- ⚡ **Direct-to-S3 Uploads** - Bypasses backend server memory/bandwidth using secure Presigned PUT URLs
+- 📦 **Chunked Uploads** - Automatic 10MB parallel/sequential chunking for files larger than 10MB
+- 📡 **Real-Time Scan Updates** - Server-Sent Events (SSE) push background virus scan results to the frontend instantly
 - 📱 **Responsive Design** - Works seamlessly on desktop and mobile
 
 ## Tech Stack
@@ -127,6 +130,26 @@ This will start:
 - Next.js frontend (port 3000)
 - PostgreSQL (port 5433)
 - MinIO (port 9000)
+
+## Production Upload & Scanning Architecture
+
+SkyDrive uses a high-performance production architecture for handling uploads:
+
+1. **Direct-to-Storage Uploads:** File uploads bypass the Spring Boot backend server entirely. The frontend requests a temporary **Presigned PUT URL** from the backend, and uploads the bytes directly from the desktop browser to MinIO/S3.
+2. **Chunked Resumable Uploads:** Files larger than 10MB are sliced into 10MB chunks on the frontend. The browser uploads these chunks directly to MinIO/S3. On completion, the backend merges the chunks sequentially and cleans up the temporary parts.
+3. **Asynchronous Virus Scanning:** Files are scanned by ClamAV asynchronously in a background thread. While scanning is underway, files display a `Scanning...` status and are protected from download/share actions.
+4. **Real-Time Push Notifications:** The backend broadcasts scan completion notifications (`CLEAN` or `VIRUS_DETECTED`) to connected browsers via **Server-Sent Events (SSE)**, causing the UI to refresh immediately.
+5. **Orphaned Upload Sweeper:** A scheduled hourly task automatically purges database entries and temporary objects for uploads that were initiated but abandoned.
+
+### Architecture Design Rationale
+
+| Strategy | Why We Chose It |
+| :--- | :--- |
+| **Direct-to-Storage (Presigned URLs)** | Bypasses the application server for raw file uploads. Traditional file uploads buffer the file bytes in the application server's memory or temp disc, creating a major CPU/Memory/Bandwidth bottleneck. Direct-to-Storage saves server resources, scales horizontally, and allows uploading multi-gigabyte files. |
+| **Chunked Resumable Uploads** | Handles large uploads reliably over unstable network connections. If a 1GB upload fails at 90%, the user must restart from 0%. With chunked uploads, we split files and can retry individual failed chunks. It also avoids JVM memory exhaustion during merge by merging streams sequentially. |
+| **Asynchronous Virus Scanning** | Decouples heavy computational tasks (ClamAV scan) from the user request thread. If scanning was synchronous, the user upload request would hang for minutes while ClamAV scans the file, resulting in gateway timeouts (504). By scanning asynchronously, the file is saved instantly as `PENDING_SCAN` and checked in a background thread. |
+| **Server-Sent Events (SSE)** | Real-time user experience without wasteful network polling. WebSockets are bi-directional but have higher overhead. SSE is lightweight, uses standard HTTP/1.1 or HTTP/2, handles auto-reconnection out of the box, and is perfect for unidirectional server-to-client push updates (like "Scan complete"). |
+| **Orphaned Upload Sweeper** | Prevents storage leakages. When a client initiates a direct upload but loses connection or closes the tab, the database has an orphan record in `UPLOADING` state and MinIO has partial/abandoned chunks. The sweeper automatically cleans these up to maintain data consistency. |
 
 ## Configuration
 

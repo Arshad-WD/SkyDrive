@@ -1,5 +1,6 @@
 package com.skydrive.skydrive.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -82,7 +83,7 @@ public class FolderService {
                         .name(folder.getName())
                     .build()
                     ));
-        List<FolderTreeResponse> roots = new java.util.ArrayList<>();
+        List<FolderTreeResponse> roots = new ArrayList<>();
 
             for(Folder folder: folders){
 

@@ -18,14 +18,18 @@ public class VirusScanService {
 
     private final ClamAvConfig config;
     
-    public void scan(MultipartFile file)throws Exception{
+    public void scan(MultipartFile file) throws Exception {
+        try (InputStream is = file.getInputStream()) {
+            scan(is);
+        }
+    }
+
+    public void scan(InputStream input) throws Exception {
         try(
             Socket socket = new Socket( config.getHost() , config.getPort());
         ){
             socket.getOutputStream()
                 .write("zINSTREAM\0".getBytes());
-
-            InputStream input = file.getInputStream();
 
             byte[] buffer= new byte[2048];
 
@@ -41,8 +45,6 @@ public class VirusScanService {
                 
                 socket.getOutputStream()
                         .write(buffer, 0, read);
-
-                
             }
 
             socket.getOutputStream().write(new byte[]{0,0,0,0});

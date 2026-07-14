@@ -30,6 +30,6 @@ public interface FileRepository extends JpaRepository<DriveFile, Long> {
    Long getUsedStorage(Long userId);
 
    List<DriveFile> findByDeletedTrueAndDeletedAtBefore(LocalDateTime date);
+
+   List<DriveFile> findByStatusAndUploadedAtBefore(com.skydrive.skydrive.entity.UploadStatus status, LocalDateTime date);
 }
-
-

@@ -24,8 +24,10 @@ import MoveFileDialog from "@/components/folders/MoveFileDialog";
 import DragDropOverlay from "@/components/upload/DragDropOverlay";
 import UploadQueue from "@/components/upload/UploadQueue";
 import FilePreviewDialog from "@/components/files/FilePreviewDialog";
+import { useSse } from "@/hooks/useSse";
 
 function FilesPageContent() {
+  useSse();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const fileInputRef = useRef<HTMLInputElement>(null);

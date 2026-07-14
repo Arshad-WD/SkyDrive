@@ -20,7 +20,9 @@ import {
   Trash2,
   Inbox,
   Users,
-  Eye
+  Eye,
+  Loader2,
+  ShieldAlert
 } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { motion } from "framer-motion";
@@ -151,50 +153,74 @@ export default function FileList({ items }: FileListProps) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/50 text-foreground/90">
-            {items.map((item) => (
-              <tr
-                key={`${item.isFolder ? "folder" : "file"}-${item.id}`}
-                onClick={item.isFolder ? () => handleFolderClick(item) : () => setPreviewOpen(true, item)}
-                className="hover:bg-secondary/45 transition-colors group cursor-pointer"
-              >
-                {/* Name */}
-                <td className="py-2.5 px-5 max-w-xs truncate">
-                  <div className="flex items-center gap-3">
-                    <span className="shrink-0">{getFileIcon(item)}</span>
-                    <span className="truncate text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors">
-                      {item.originalName}
-                    </span>
-                    {(item.isFolder || item.id % 2 === 0) && (
-                      <span title="Shared">
-                        <Users className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 ml-1" />
-                      </span>
-                    )}
-                  </div>
-                </td>
+            {items.map((item) => {
+              const isClean = item.status === "CLEAN" || !item.status;
+              return (
+                <tr
+                    key={`${item.isFolder ? "folder" : "file"}-${item.id}`}
+                    onClick={
+                      item.isFolder 
+                        ? () => handleFolderClick(item) 
+                        : isClean 
+                          ? () => setPreviewOpen(true, item) 
+                          : undefined
+                    }
+                    className={`hover:bg-secondary/45 transition-colors group ${
+                      item.isFolder || isClean ? "cursor-pointer" : "cursor-not-allowed"
+                    }`}
+                  >
+                    {/* Name */}
+                    <td className="py-2.5 px-5 max-w-xs truncate">
+                      <div className="flex items-center gap-3">
+                        <span className="shrink-0">{getFileIcon(item)}</span>
+                        <span className="truncate text-[13px] font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {item.originalName}
+                        </span>
+                        {item.status === "PENDING_SCAN" && (
+                          <span className="flex items-center gap-1 text-[9px] font-extrabold text-muted-foreground bg-secondary/85 px-1.5 py-0.5 rounded border border-border/80 uppercase tracking-wide shrink-0">
+                            <Loader2 className="w-2.5 h-2.5 animate-spin" />
+                            Scanning
+                          </span>
+                        )}
+                        {item.status === "VIRUS_DETECTED" && (
+                          <span className="flex items-center gap-1 text-[9px] font-extrabold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20 uppercase tracking-wide shrink-0">
+                            <ShieldAlert className="w-2.5 h-2.5 animate-pulse" />
+                            Virus Blocked
+                          </span>
+                        )}
+                        {(item.isFolder || item.id % 2 === 0) && (
+                          <span title="Shared">
+                            <Users className="w-3.5 h-3.5 text-muted-foreground/60 shrink-0 ml-1" />
+                          </span>
+                        )}
+                      </div>
+                    </td>
 
-                {/* Type */}
-                <td className="py-3.5 px-5 text-muted-foreground/85 font-medium hidden sm:table-cell">
-                  {getCleanType(item)}
-                </td>
+                    {/* Type */}
+                    <td className="py-3.5 px-5 text-muted-foreground/85 font-medium hidden sm:table-cell">
+                      {getCleanType(item)}
+                    </td>
 
-                {/* Size */}
-                <td className="py-3.5 px-5 text-muted-foreground/85 font-medium hidden sm:table-cell">
-                  {item.isFolder ? "—" : formatBytes(item.size)}
-                </td>
+                    {/* Size */}
+                    <td className="py-3.5 px-5 text-muted-foreground/85 font-medium hidden sm:table-cell">
+                      {item.isFolder ? "—" : formatBytes(item.size)}
+                    </td>
 
-                {/* Actions Dropdown */}
-                <td className="py-3.5 px-5 text-right relative">
-                  <div className="flex items-center justify-end">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveMenuId(activeMenuId === item.id ? null : item.id);
-                      }}
-                      className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
-                    >
-                      <MoreVertical className="w-4 h-4" />
-                    </button>
-                  </div>
+                    {/* Actions Dropdown */}
+                    <td className="py-3.5 px-5 text-right relative">
+                      {(item.isFolder || isClean) && (
+                        <div className="flex items-center justify-end">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuId(activeMenuId === item.id ? null : item.id);
+                            }}
+                            className="p-1.5 rounded-lg hover:bg-secondary text-muted-foreground hover:text-foreground cursor-pointer"
+                          >
+                            <MoreVertical className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
 
                   {activeMenuId === item.id && (
                     <div
@@ -280,7 +306,8 @@ export default function FileList({ items }: FileListProps) {
                   )}
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

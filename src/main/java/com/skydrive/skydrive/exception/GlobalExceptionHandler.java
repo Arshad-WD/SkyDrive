@@ -73,4 +73,14 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleVirus(VirusDetectedException ex){
         return ResponseEntity.badRequest().body("Virus detected: " + ex.getMessage());
     }
+
+    @ExceptionHandler(FileNotAvailableException.class)
+    public ResponseEntity<ErrorResponse> handleFileNotAvailable(FileNotAvailableException ex){
+        ErrorResponse response = ErrorResponse.builder()
+                    .timestamp(LocalDateTime.now())
+                    .status(400)
+                    .message(ex.getMessage())
+                    .build();
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+    }
 }

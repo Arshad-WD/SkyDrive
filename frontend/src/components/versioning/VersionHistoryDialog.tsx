@@ -227,9 +227,20 @@ export default function VersionHistoryDialog() {
                               <span className="text-sm font-semibold text-foreground">
                                 Version {ver.versionNumber}
                               </span>
-                              {idx === 0 && (
+                              {idx === 0 && ver.status === "CLEAN" && (
                                 <span className="px-2 py-0.5 rounded-full bg-[#0b57d0]/10 dark:bg-[#8ab4f8]/10 text-[#0b57d0] dark:text-[#8ab4f8] border border-[#0b57d0]/15 dark:border-[#8ab4f8]/15 text-[9px] font-semibold uppercase tracking-wide">
                                   Current
+                                </span>
+                              )}
+                              {ver.status === "PENDING_SCAN" && (
+                                <span className="flex items-center gap-1 text-[8px] font-extrabold text-muted-foreground bg-secondary px-1.5 py-0.5 rounded border border-border/80 uppercase tracking-wide shrink-0">
+                                  <RefreshCw className="w-2.5 h-2.5 animate-spin" />
+                                  Scanning
+                                </span>
+                              )}
+                              {ver.status === "VIRUS_DETECTED" && (
+                                <span className="flex items-center gap-1 text-[8px] font-extrabold text-destructive bg-destructive/10 px-1.5 py-0.5 rounded border border-destructive/20 uppercase tracking-wide shrink-0">
+                                  Blocked
                                 </span>
                               )}
                             </div>
@@ -249,28 +260,30 @@ export default function VersionHistoryDialog() {
                           </div>
 
                           {/* Actions — visible on hover */}
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0">
-                            <button
-                              onClick={() => handleDownload(ver.id, ver.versionNumber)}
-                              title="Download this version"
-                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-secondary/70 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer active:scale-90"
-                            >
-                              <Download className="w-3.5 h-3.5" />
-                            </button>
-                            {idx > 0 && (
+                          {(ver.status === "CLEAN" || !ver.status) && (
+                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150 shrink-0">
                               <button
-                                onClick={() => handleRestore(ver.id)}
-                                disabled={restoreMutation.isPending}
-                                title="Restore to this version"
-                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-150 cursor-pointer active:scale-90 disabled:opacity-40"
+                                onClick={() => handleDownload(ver.id, ver.versionNumber)}
+                                title="Download this version"
+                                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-secondary/70 text-muted-foreground hover:text-foreground transition-all duration-150 cursor-pointer active:scale-90"
                               >
-                                {restoringId === ver.id
-                                  ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                                  : <RotateCcw className="w-3.5 h-3.5" />
-                                }
+                                <Download className="w-3.5 h-3.5" />
                               </button>
-                            )}
-                          </div>
+                              {idx > 0 && (
+                                <button
+                                  onClick={() => handleRestore(ver.id)}
+                                  disabled={restoreMutation.isPending}
+                                  title="Restore to this version"
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-amber-500/10 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400 transition-all duration-150 cursor-pointer active:scale-90 disabled:opacity-40"
+                                >
+                                  {restoringId === ver.id
+                                    ? <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                    : <RotateCcw className="w-3.5 h-3.5" />
+                                  }
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </motion.div>
                     ))}

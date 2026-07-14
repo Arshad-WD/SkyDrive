@@ -1,5 +1,6 @@
 package com.skydrive.skydrive.dto.file;
 
+import com.skydrive.skydrive.entity.UploadStatus;
 import java.time.LocalDateTime;
 
 import lombok.AllArgsConstructor;
@@ -20,4 +21,5 @@ public class FileVersionResponse {
     private Long size;
     private String contentType;
     private LocalDateTime createdAt;
+    private UploadStatus status;
 }
